@@ -1,0 +1,339 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "rialto-servermanager API",
+    "class": "com.libertyglobal.rdk.rialto",
+    "description": "rialto-servermanager JSON RPC 2.0 interface",
+    "version": "0.0.1"
+  },
+  "common": {
+    "errors": {
+      "invalid_params": {
+        "code": 1,
+        "message": "BAD_ARGUMENTS: Invalid method parameters (invalid name and/or type) recognised: Wrong parameters"
+      },
+      "general": {
+        "code": 2,
+        "message": "GERROR_GENERAL: general error"
+      },
+      "registration_not_found": {
+        "code": -1,
+        "message": "Registration info not found/Only one registration per event type per each connection"
+      }
+    },
+    "results": {
+      "void": {
+        "type": "null",
+        "default": null,
+        "description": "Always null.",
+        "properties": {}
+      },
+      "default": {
+        "type": "integer",
+        "default": 0,
+        "description": "Value 0 on success.",
+        "properties": {}
+      }
+    }
+  },
+  "definitions": {
+    "id": {
+      "description": "Id of session/app. Will also be used as the socket name. Cannot be empty. Accepted characters are [A-Za-z0-9._-]",
+      "type": "string",
+      "example": "app"
+    },
+    "state": {
+      "description": "State of the session: uninitialized, inactive, active, notrunning, error",
+      "type": "string",
+      "example": "active"
+    },
+    "socket": {
+      "description": "Path of the socket created",
+      "type": "string",
+      "example": "/tmp/app"
+    },
+    "eventType": {
+      "description": "Event type",
+      "type": "string",
+      "enum": [
+        "StateChangeEvent"
+      ],
+      "example": "StateChangeEvent"
+    },
+    "eventId": {
+      "description": "Id of the listener",
+      "type": "string",
+      "example": "events.1"
+    },
+    "listener": {
+      "description": "Listener Info",
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/eventType"
+        }
+      },
+      "required": [
+        "eventType"
+      ]
+    },
+    "activateRequest": {
+        "type": "object",
+        "default": null,
+        "description": "",
+        "properties": {
+          "id": {
+            "$ref": "#/definitions/id"
+          }
+        },
+        "required": [
+          "id"
+        ]
+    },
+    "stopRequest": {
+      "type": "object",
+      "default": null,
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "deactivateRequest": {
+      "type": "object",
+      "default": null,
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "getStateRequest": {
+      "type": "object",
+      "default": null,
+      "description": "",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "registerRequest": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/eventType"
+        },
+        "id": {
+          "$ref": "#/definitions/eventId"
+        }
+      },
+      "required": [
+        "event",
+        "id"
+      ]
+    },
+    "unregisterRequest": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/eventType"
+        },
+        "id": {
+          "$ref": "#/definitions/eventId"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "activateDeactivateResult": {
+      "type": "object",
+      "default": null,
+      "description": "",
+      "properties": {
+        "socket": {
+          "$ref": "#/definitions/socket"
+        }
+      },
+      "required": [
+        "socket"
+      ]
+    },
+    "stateResult": {
+      "type": "object",
+      "default": null,
+      "description": "",
+      "properties": {
+        "state": {
+          "$ref": "#/definitions/state"
+        }
+      },
+      "required": [
+        "state"
+      ]
+    },
+    "getListenersResult": {
+      "type": "object",
+      "properties": {
+        "listeners": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/listener"
+          }
+        }
+      },
+      "required": [
+        "listeners"
+      ]
+    }
+  },
+  "methods": {
+    "activate": {
+      "summary": "Activates an app session.\n\nSpawns a server instance if app session was in 'notrunning' state.\nIf App session server state changes, then StateChangeEvent 'active' will be sent.\nIf App session server is already in 'active' state, then method call will succeed but no StateChangeEvent will be sent.",
+      "events": [
+        "StateChangeEvent"
+      ],
+      "params": {
+        "$ref": "#/definitions/activateRequest"
+      },
+      "result": {
+        "$ref": "#/definitions/activateDeactivateResult"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "$ref": "#/common/errors/invalid_params"
+        }
+      ]
+    },
+    "stop": {
+      "summary": "Stops an app session and terminate the server.\n\nApp session server is moved to 'notrunning' state.\nIf App session server state changes, then StateChangeEvent 'notrunning' will be sent.\nIf App session server is already in 'notrunning' state, then method call will succeed but no StateChangeEvent will be sent.",
+      "events": [
+        "StateChangeEvent"
+      ],
+      "params": {
+        "$ref": "#/definitions/stopRequest"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "$ref": "#/common/errors/invalid_params"
+        }
+      ]
+    },
+    "deactivate": {
+      "summary": "Suspends an app session (Moves it to 'inactive' state).\n\nCauses server to terminate A/V playback sessions.\nIf App session server state is changed, then StateChangeEvent 'inactive' will be sent.\nIf App session server is already in 'inactive' state, then method call will succeed but no StateChangeEvent will be sent.",
+      "events": [
+        "StateChangeEvent"
+      ],
+      "params": {
+        "$ref": "#/definitions/deactivateRequest"
+      },
+      "result": {
+        "$ref": "#/definitions/activateDeactivateResult"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "$ref": "#/common/errors/invalid_params"
+        }
+      ]
+    },
+    "getState": {
+      "summary": "Gets session state",
+      "params": {
+        "$ref": "#/definitions/getStateRequest"
+      },
+      "result": {
+        "$ref": "#/definitions/stateResult"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/invalid_params"
+        }
+      ]
+    },
+    "register": {
+      "summary": "Registers event listener",
+      "params": {
+        "$ref": "#/definitions/registerRequest"
+      },
+      "result": {
+        "$ref": "#/common/results/default"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/registration_not_found"
+        }
+      ]
+    },
+    "unregister": {
+      "summary": "Registers event listener",
+      "params": {
+        "$ref": "#/definitions/unregisterRequest"
+      },
+      "result": {
+        "$ref": "#/common/results/default"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/invalid_params"
+        },
+        {
+          "$ref": "#/common/errors/registration_not_found"
+        }
+      ]
+    },
+    "getListeners": {
+      "summary": "Returns information about registered listeners",
+      "result": {
+        "$ref": "#/definitions/getListenersResult"
+      },
+      "errors": [
+      ]
+    }
+  },
+  "events": {
+    "StateChangeEvent": {
+      "summary": "Rialto-ServerManager state changed event",
+      "description": "Notification of changed state of rialto-servermanager",
+      "params": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/definitions/id"
+          },
+          "state": {
+            "$ref": "#/definitions/state"
+          }
+        },
+        "required": [
+          "id",
+          "state"
+        ]
+      }
+    }
+  }
+}
