@@ -19,16 +19,24 @@
 #include "RialtoRpcWs.h"
 #include "Logging.h"
 #include <csignal>
-#include <unistd.h>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
 
-static volatile bool should_quit = false;
+std::atomic<bool> should_quit{false};
+std::mutex mtx;
+std::condition_variable cv;
 
 void sig_handler(int sig_num)
 {
     DBG("Signal received " << sig_num);
     if (sig_num == SIGTERM || sig_num == SIGINT)
     {
-        should_quit = true;
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            should_quit = true;
+        }
+        cv.notify_one();
     }
 }
 
@@ -43,10 +51,12 @@ int main(int argc, char **argv)
 
     std::signal(SIGTERM, sig_handler);
     std::signal(SIGINT, sig_handler);
-    while (!should_quit)
+
     {
-        usleep(100);
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [] { return should_quit.load(); });
     }
+
     closeWsRpc();
     DBG_OUT();
     return 0;
